@@ -39,7 +39,7 @@
       { fps: 10, qrbox: 250 },
       (decodedText) => {
         const id = decodedText.trim();
-console.log("Mã đã quét:", id);
+console.log("📦 Mã đã quét:", id);
 addProduct(id);
       }
     );
