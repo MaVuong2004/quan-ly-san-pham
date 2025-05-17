@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Quản lý sản phẩm bằng QR</title>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+</head>
+<body>
+  <h1>Quét sản phẩm</h1>
+  <div id="reader" style="width:300px"></div>
+  <ul id="product-list"></ul>
+  <h2>Tổng tiền: <span id="total">0</span> VNĐ</h2>
+
+  <script>
+    const sheetURL = "https://docs.google.com/spreadsheets/d/1ZETWL6NP4soFwOMrw03p8o32a3Mbh3tgx--M4sOgZZ0/export?format=csv";
+    let products = {};
+    let total = 0;
+
+    fetch(sheetURL)
+      .then(res => res.text())
+      .then(csv => {
+        const lines = csv.split("\n");
+        lines.slice(1).forEach(line => {
+          const [id, name, price] = line.split(",");
+          products[id.trim()] = { name: name.trim(), price: parseInt(price.trim()) };
+        });
+      });
+
+    function addProduct(id) {
+      if (!products[id]) return alert("Không tìm thấy sản phẩm!");
+      const li = document.createElement("li");
+      li.textContent = `${products[id].name} - ${products[id].price} VNĐ`;
+      document.getElementById("product-list").appendChild(li);
+      total += products[id].price;
+      document.getElementById("total").textContent = total;
+    }
+
+    new Html5Qrcode("reader").start(
+      { facingMode: "environment" },
+      { fps: 10, qrbox: 250 },
+      (decodedText) => {
+        addProduct(decodedText.trim());
+      }
+    );
+  </script>
+</body>
+</html>
