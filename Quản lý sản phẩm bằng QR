@@ -1,48 +1,96 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="UTF-8">
   <title>Quản lý sản phẩm bằng QR</title>
   <script src="https://unpkg.com/html5-qrcode"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    #reader {
+      width: 300px;
+      margin-bottom: 20px;
+    }
+    li {
+      margin: 5px 0;
+    }
+    #manual-input {
+      margin-top: 20px;
+    }
+  </style>
 </head>
 <body>
-  <h1>Quét sản phẩm</h1>
-  <div id="reader" style="width:300px"></div>
+  <h1>Quản lý sản phẩm</h1>
+  <div id="reader"></div>
+
+  <h2>Danh sách sản phẩm:</h2>
   <ul id="product-list"></ul>
   <h2>Tổng tiền: <span id="total">0</span> VNĐ</h2>
 
-  <script>
-    const sheetURL = "https://docs.google.com/spreadsheets/d/1ZETWL6NP4soFwOMrw03p8o32a3Mbh3tgx--M4sOgZZ0/export?format=csv";
-    let products = {};
-    let total = 0;
+  <div id="manual-input">
+    <input type="text" id="manual-id" placeholder="Nhập mã sản phẩm...">
+    <button onclick="addManual()">✔ Thêm</button>
+  </div>
 
-    fetch(sheetURL)
-      .then(res => res.text())
-      .then(csv => {
-        const lines = csv.split("\n");
-        lines.slice(1).forEach(line => {
-          const [id, name, price] = line.split(",");
-          products[id.trim()] = { name: name.trim(), price: parseInt(price.trim()) };
-        });
-      });
+<script>
+const sheetURL = "https://docs.google.com/spreadsheets/d/1ZETWL6NP4soFwOMrw03p8o32a3Mbh3tgx--M4sOgZZ0/export?format=csv";
+let products = {}; 
+let total = 0;
 
-    function addProduct(id) {
-      if (!products[id]) return alert("Không tìm thấy sản phẩm!");
-      const li = document.createElement("li");
-      li.textContent = `${products[id].name} - ${products[id].price} VNĐ`;
-      document.getElementById("product-list").appendChild(li);
-      total += products[id].price;
-      document.getElementById("total").textContent = total;
-    }
-
-    new Html5Qrcode("reader").start(
-      { facingMode: "environment" },
-      { fps: 10, qrbox: 250 },
-      (decodedText) => {
-        const id = decodedText.trim();
-console.log("📦 Mã đã quét:", id);
-addProduct(id);
+// Tải dữ liệu từ Google Sheets
+fetch(sheetURL)
+  .then(res => res.text())
+  .then(csv => {
+    const lines = csv.split("\n");
+    lines.slice(1).forEach(line => {
+      const [id, name, price] = line.split(",");
+      if (id && name && price) {
+        const cleanId = id.trim().toUpperCase();
+        products[cleanId] = {
+          name: name.trim(),
+          price: parseInt(price.trim())
+        };
+        console.log("📊 Đã nạp:", cleanId, products[cleanId]);
       }
-    );
-  </script>
+    });
+  });
+
+function addProduct(id) {
+  const key = id.trim().toUpperCase();
+  if (!products[key]) return alert("❌ Không tìm thấy sản phẩm: " + key);
+
+  const li = document.createElement("li");
+  li.textContent = `✔ ${products[key].name} - ${products[key].price} VNĐ`;
+  document.getElementById("product-list").appendChild(li);
+  total += products[key].price;
+  document.getElementById("total").textContent = total;
+}
+
+function addManual() {
+  const input = document.getElementById("manual-id");
+  const id = input.value;
+  if (!id) return;
+  console.log("🖊 Mã nhập tay:", id);
+  addProduct(id);
+  input.value = "";
+}
+
+// Kích hoạt camera quét QR
+if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+  new Html5Qrcode("reader").start(
+    { facingMode: "environment" },
+    { fps: 10, qrbox: 250 },
+    decodedText => {
+      const id = decodedText.trim();
+      console.log("💾 Mã đã quét:", id);
+      addProduct(id);
+    }
+  ).catch(err => console.error("❌ Lỗi camera:", err));
+} else {
+  document.getElementById("reader").textContent = "Thiết bị không hỗ trợ camera.";
+}
+</script>
 </body>
 </html>
