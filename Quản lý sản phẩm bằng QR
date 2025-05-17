@@ -38,7 +38,9 @@
       { facingMode: "environment" },
       { fps: 10, qrbox: 250 },
       (decodedText) => {
-        addProduct(decodedText.trim());
+        const id = decodedText.trim();
+console.log("Mã đã quét:", id);
+addProduct(id);
       }
     );
   </script>
